@@ -1,38 +1,66 @@
 import streamlit as st
 import pickle
 import numpy as np
+from sklearn.utils.validation import check_is_fitted
 
-# Load the trained model and scaler
+# Load the model and scaler
 model = pickle.load(open('finalized_model.pickle', 'rb'))
 scaler = pickle.load(open('scaler.pickle', 'rb'))
 
-# Streamlit app UI
-st.title('Calories Burned Prediction App')
+# Optional debug check
+check_is_fitted(model)
 
-# Get user input for features
-age = st.number_input('Enter your age (years)', min_value=10, max_value=100, value=25)
-weight = st.number_input('Enter your weight (kg)', min_value=30, max_value=200, value=70)
-height = st.number_input('Enter your height (cm)', min_value=100, max_value=250, value=175)
-gender = st.selectbox('Select your gender', ['Male', 'Female'])
-exercise_duration = st.number_input('Enter exercise duration (minutes)', min_value=1, max_value=500, value=30)
+# Page configuration
+st.set_page_config(page_title="Calories Burned Predictor", page_icon="🔥", layout="centered")
 
-# New fields added
-heart_rate = st.number_input('Enter your heart rate (bpm)', min_value=40, max_value=200, value=75)
-steps_count = st.number_input('Enter your steps count', min_value=0, max_value=30000, value=5000)
+# Custom heading
+st.markdown("""
+    <h2 style='text-align: center; color: #FF4B4B;'>🔥 Calories Burned Prediction App 🔥</h2>
+    <p style='text-align: center;'>Enter your workout details to estimate the calories you've burned!</p>
+    <hr>
+""", unsafe_allow_html=True)
 
-# Convert gender to numeric value
+# Layout using columns
+col1, col2 = st.columns(2)
+
+with col1:
+    age = st.number_input('🎂 Age (years)', 10, 100, 25)
+    height = st.number_input('📏 Height (cm)', 100, 250, 175)
+    gender = st.selectbox('🧑 Gender', ['Male', 'Female'])
+
+with col2:
+    weight = st.number_input('⚖️ Weight (kg)', 30, 200, 70)
+    duration = st.number_input('⏱️ Duration (minutes)', 1, 500, 30)
+    heart_rate = st.number_input('❤️ Heart Rate (bpm)', 40, 200, 75)
+
+# Additional input
+body_temp = st.number_input('🌡️ Body Temperature (°C)', 35.0, 42.0, 37.0)
+
+# Convert gender
 gender_numeric = 1 if gender == 'Male' else 0
 
-# Collect input features into a NumPy array (7 features)
-input_data = np.array([[age, weight, height, gender_numeric, exercise_duration, heart_rate, steps_count]])
-
-# Scale the input data using the loaded scaler
+# Prepare input
+input_data = np.array([[age, weight, height, gender_numeric, duration, heart_rate, body_temp]])
 scaled_data = scaler.transform(input_data)
 
-# When the user clicks "Predict"
-if st.button('Predict'):
-    # Make the prediction using the loaded model
-    prediction = model.predict(scaled_data)
-    
-    # Display the prediction result
-    st.success(f'Predicted Calories Burned: {prediction[0]:.2f} kcal')
+# Predict button
+if st.button('🚀 Predict Calories Burned'):
+    prediction = model.predict(scaled_data)[0]
+
+    st.success(f'🔥 Estimated Calories Burned: **{prediction:.2f} kcal**')
+
+    # Show input summary
+    with st.expander("📊 View Your Input Summary"):
+        st.markdown(f"""
+        - **Age:** {age} years  
+        - **Weight:** {weight} kg  
+        - **Height:** {height} cm  
+        - **Gender:** {'Male' if gender_numeric == 1 else 'Female'}  
+        - **Duration:** {duration} minutes  
+        - **Heart Rate:** {heart_rate} bpm  
+        - **Body Temp:** {body_temp} °C
+        """)
+
+# Footer
+st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>Made with ❤️ using Streamlit</p>", unsafe_allow_html=True)
